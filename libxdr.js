@@ -9,139 +9,142 @@
 
 /*! @source http://purl.eligrey.com/github/libxdr/blob/master/libxdr.js*/
 
-if (!this.XDR) {
-  this.XDR = new Function();
-  
-  //XDR.defaultTimeout = 10000; // default timeout; 10000 is IE8's default for similar XDomainRequest
-
-  XDR.prototype = {
-  
-    open: function (method, uri, async) {
-      if (async === false)
-        throw new RangeError("XDR.open: libxdr does not support synchronous requests.");
-
-      this._request = { // request object for pmxdr.request
-        method : method,
-        uri    : uri,
-        headers: {}
-      }
-    },
-      
-    setRequestHeader: function(header, value) {
-      this._request.headers[header.toLowerCase()] = value;
-    },
+(function (global) {
+  "use strict";
+  if (!global.XDR) {
+    var XDR = global.XDR = function XDR() {};
     
-    removeRequestHeader: function(header) {
-      delete this._request.headers[header.toLowerCase()];
-    },
+    //XDR.defaultTimeout = 10000; // default timeout; 10000 is IE8's default for similar XDomainRequest
+
+    XDR.prototype = {
+    
+      open: function (method, uri, async) {
+        if (async === false)
+          throw new RangeError("XDR.open: libxdr does not support synchronous requests.");
+
+        this._request = { // request object for pmxdr.request
+          method : method,
+          uri    : uri,
+          headers: {}
+        };
+      },
+        
+      setRequestHeader: function(header, value) {
+        this._request.headers[header.toLowerCase()] = value;
+      },
       
-    send: function (data) {
-      var instance = this; // for minification & reference to this
-      instance._request.data = data;
-      instance._request.callback = function(response) {
-        instance.readyState = 4; // for onreadystatechange
+      removeRequestHeader: function(header) {
+        delete this._request.headers[header.toLowerCase()];
+      },
+        
+      send: function (data) {
+        var instance = this; // for minification & reference to this
+        instance._request.data = data;
+        instance._request.callback = function(response) {
+          instance.readyState = 4; // for onreadystatechange
+        
+          if (response.error) {
+            if (response.error === "LOAD_ERROR") {
+              instance.status = 502; // 502 Bad Gateway (seems reasonable when response.status is not set)
+              instance.statusText = "Bad Gateway";
+            }
+              
+            else if (response.error === "DISALLOWED_REQUEST_METHOD") {
+              instance.status = 405; // 405 Method Not Allowed
+              instance.statusText = "Method Not Allowed";
+            }
+          
+            else if (response.error === "TIMEOUT") {
+              instance.status = 408; // 408 Request Timeout
+              instance.statusText = "Request Timeout";
+            }
+                
+            else if (response.error === "DISALLOWED_ORIGIN") {
+              instance.status = 412; // 412 Precondition Failed (seems right for disallowed origin)
+              instance.statusText = "Precondition Failed";
+            }
+          } else {
+            if (response.status)
+              instance.status = response.status;
+            if (response.statusText)
+              instance.statusText = response.statusText;
+          }
       
-        if (response.error) {
-          if (response.error == "LOAD_ERROR") {
-            instance.status = 502; // 502 Bad Gateway (seems reasonable when response.status is not set)
-            instance.statusText = "Bad Gateway";
+            if (!instance.status)
+              instance.status = 200; // pmxdr host wouldn't respond unless the status was 200 so default to it
+          
+          
+          if (response.error || instance.status >= 400) {
+            if (typeof instance.onloadend === "function")
+              instance.onloadend();
+            if (typeof instance.onerror === "function")
+              return instance.onerror();
+          }
+          
+          if (instance.status === 408 && typeof instance.ontimeout === "function")
+              return instance.ontimeout();
+      
+          var xmlDocument = null; // parse response.data and simulate responseXML
+          try {
+            xmlDocument = (new DOMParser()).parseFromString(response.data, "application/xml");
+          } catch(e1) {
+            try {
+              xmlDocument = new ActiveXObject("Microsoft.XMLDOM");
+              xmlDocument.loadXML(response.data);
+            } catch(e2) {
+              xmlDocument = null;
+            }
           }
             
-          else if (response.error == "DISALLOWED_REQUEST_METHOD") {
-            instance.status = 405; // 405 Method Not Allowed
-            instance.statusText = "Method Not Allowed";
-          }
-        
-          else if (response.error == "TIMEOUT") {
-            instance.status = 408; // 408 Request Timeout
-            instance.statusText = "Request Timeout";
-          }
-              
-          else if (response.error == "DISALLOWED_ORIGIN") {
-            instance.status = 412; // 412 Precondition Failed (seems right for disallowed origin)
-            instance.statusText = "Precondition Failed";
-          }
-        } else {
-          if (response.status)
-            instance.status = response.status;
-          if (response.statusText)
-            instance.statusText = response.statusText;
-        }
-    
-          if (!instance.status)
-            instance.status = 200; // pmxdr host wouldn't respond unless the status was 200 so default to it
-        
-        
-        if (response.error || instance.status >= 400) {
-          if (typeof instance.onloadend == "function")
-            instance.onloadend();
-          if (typeof instance.onerror == "function")
-            return instance.onerror();
-        }
-        
-        if (instance.status == 408 && typeof instance.ontimeout == "function")
-            return instance.ontimeout();
-    
-        var xmlDocument = null; // parse response.data and simulate responseXML
-        try {
-          xmlDocument = (new DOMParser()).parseFromString(response.data, "application/xml");
-        } catch(e) {
-          try {
-            xmlDocument = new ActiveXObject("Microsoft.XMLDOM");
-            xmlDocument.loadXML(response.data);
-          } catch(e) {
-            xmlDocument = null;
-          }
-        }
+          instance.responseXML = xmlDocument;
           
-        instance.responseXML = xmlDocument;
-        
-        instance.responseText = response.data;
-       
-        if (!response.headers) {
-          response.headers = {};
-        }
-
-        instance.contentType = response.headers["content-type"];
-           
-        var headers = [];
-        for (var header in response.headers) // recreate the getAllResponseHeaders string
-          if (response.headers.hasOwnProperty(header))
-            headers.push(header + ": " + response.headers[header]);
-       
-        headers = headers.join("\r\n");
-        instance.getAllResponseHeaders = function() {
-          return headers;
-        }
-        
-        instance.getResponseHeader = function(header) {
-          return response.headers[header.toLowerCase()] || null;
-        }
-          
-        if (typeof instance.onreadystatechange == "function")
-          instance.onreadystatechange();
-        if (typeof instance.onprogress == "function")
-          instance.onprogress();
-        if (typeof instance.onload == "function")
-          instance.onload();
-        if (typeof instance.onloadend == "function")
-          instance.onloadend();
+          instance.responseText = response.data;
          
-      };
-      
-      if (instance.timeout) instance._request.timeout = instance.timeout;
-      else if (XDR.defaultTimeout) instance._request.timeout = XDR.defaultTimeout;
-      
-      // do the request and get the abort method
-      var aborter = pmxdr.request(instance._request).abort;
+          if (!response.headers) {
+            response.headers = {};
+          }
+
+          instance.contentType = response.headers["content-type"];
+             
+          var headers = [];
+          for (var header in response.headers) // recreate the getAllResponseHeaders string
+            if (response.headers.hasOwnProperty(header))
+              headers.push(header + ": " + response.headers[header]);
+         
+          headers = headers.join("\r\n");
+          instance.getAllResponseHeaders = function() {
+            return headers;
+          };
+          
+          instance.getResponseHeader = function(header) {
+            return response.headers[header.toLowerCase()] || null;
+          };
+            
+          if (typeof instance.onreadystatechange === "function")
+            instance.onreadystatechange();
+          if (typeof instance.onprogress === "function")
+            instance.onprogress();
+          if (typeof instance.onload === "function")
+            instance.onload();
+          if (typeof instance.onloadend === "function")
+            instance.onloadend();
+           
+        };
         
-      instance.abort = function() {
-        aborter();
-      };
-    },
-  
-    abort: function() { // default abort
-      delete this._request;
-    }
+        if (instance.timeout) instance._request.timeout = instance.timeout;
+        else if (XDR.defaultTimeout) instance._request.timeout = XDR.defaultTimeout;
+        
+        // do the request and get the abort method
+        var aborter = pmxdr.request(instance._request).abort;
+          
+        instance.abort = function() {
+          aborter();
+        };
+      },
+    
+      abort: function() { // default abort
+        delete this._request;
+      }
+    };
   }
-}
+}(window));

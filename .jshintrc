@@ -1,0 +1,11 @@
+// for options, consult http://www.jshint.com/options/
+{
+    "predef" : [
+        "ActiveXObject",
+        "pmxdr"
+    ],
+    "eqeqeq":true, // require strict equal === and !===
+    "es5": false,
+    "browser": true,
+    "shadow": true // we like to write: for (var i = 0; i < foo.length; ++i)
+}
