@@ -2,7 +2,8 @@
 {
     "predef" : [
         "ActiveXObject",
-        "pmxdr"
+        "pmxdr",
+        "IMVU"
     ],
     "eqeqeq":true, // require strict equal === and !===
     "es5": false,
