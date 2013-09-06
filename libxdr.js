@@ -9,16 +9,79 @@
 
 /*! @source http://purl.eligrey.com/github/libxdr/blob/master/libxdr.js*/
 
-(function (global) {
-  "use strict";
-  if (!global.XDR) {
-    var XDR = global.XDR = function XDR() {};
+module({}, function (imports) {
+  function delegate(object, method, args) {
+    return object[method].apply(object, args);
+  }
+
+  function XMLHttpRequestFactory(options) {
+    var XMLHttpRequest = IMVU.requireKey(options, 'XMLHttpRequest');
+    var location = IMVU.requireKey(options, 'location');
+    var pmxdr = IMVU.requireKey(options, 'pmxdr');
+
+    var hasNativeCrossOriginSupport = false;
+    try {
+      hasNativeCrossOriginSupport = (
+        'withCredentials' in XMLHttpRequest.prototype ||
+        'withCredentials' in (new XMLHttpRequest())
+      );
+    } catch (e) {}
+
+    function XDR() { // TODO: support { anon: true }
+      // Privates for delegation
+      this.__isCrossOrigin = false;
+      this.__origin = {
+        scheme: location.protocol.substring(0, location.protocol.length - 1),
+        authority: location.host
+      };
+      this._xhrDelegate = null;
+
+      // Request parameters
+      this.readyState = 0;
+      this.withCredentials = false;
+      this.timeout = 0;
+      // TODO: support .upload
+
+      // Response parameters
+      this.status = 0;
+      this.statusText = '';
+      this.response = '';
+      this.responseText = '';
+      this.responseType = '';
+      this.responseXML = null;
+    }
 
     //XDR.defaultTimeout = 10000; // default timeout; 10000 is IE8's default for similar XDomainRequest
 
     XDR.prototype = {
 
-      open: function (method, uri, async) {
+      open: function (method, uri, async) { // TODO: support user, password
+        var parsedUri = new IMVU.URI(uri);
+        var scheme = uri.getScheme();
+        var authority = uri.getAuthority();
+        this.__isCrossOrigin = !(
+           (scheme === null || scheme === this.__origin.scheme) ||
+           (authority === null || authority === this.__origin.authority)
+        );
+        if (!this.__isCrossOrigin || hasNativeCrossOriginSupport) {
+          this._xhrDelegate = new this.XMLHttpRequest();
+          this._xhrDelegate.timeout = this.timeout;
+          this._xhrDelegate.withCredentials = this.withCredentials;
+          this._xhrDelegate.open(method, uri, async);
+          this._xhrDelegate.onloadstart = function () { return delegate(this, 'onloadstart', arguments); }.bind(this);
+          this._xhrDelegate.onprogress  = function () { return delegate(this, 'onprogress', arguments);  }.bind(this);
+          this._xhrDelegate.onabort     = function () { return delegate(this, 'onabort', arguments);     }.bind(this);
+          this._xhrDelegate.onerror     = function () { return delegate(this, 'onerror', arguments);     }.bind(this);
+          this._xhrDelegate.onload      = function () { return delegate(this, 'onload', arguments);      }.bind(this);
+          this._xhrDelegate.ontimeout   = function () { return delegate(this, 'ontimeout', arguments);   }.bind(this);
+          this._xhrDelegate.onloadend   = function () { return delegate(this, 'onloadend', arguments);   }.bind(this);
+          this._xhrDelegate.onreadystatechange = function () {
+            this.readyState = this._xhrDelegate.readyState;
+            return delegate(this, 'onreadystatechange', arguments);
+          }.bind(this);
+          return;
+        }
+
         if (async === false)
           throw new RangeError("XDR.open: libxdr does not support synchronous requests.");
 
@@ -29,15 +92,37 @@
         };
       },
 
+      getResponseHeader: function () {
+        if (this._xhrDelegate) {
+          return delegate(this._xhrDelegate, 'getResponseHeader', arguments);
+        }
+        throw new Error('Assertion failure: getResponseHeader() not replaced by cross-origin xdr .send()');
+      },
+
+      getAllResponseHeaders: function () {
+        if (this._xhrDelegate) {
+          return delegate(this._xhrDelegate, 'getAllResponseHeaders', arguments);
+        }
+        throw new Error('Assertion failure: getAllResponseHeaders() not replaced by cross-origin xdr .send()');
+      },
+
       setRequestHeader: function(header, value) {
+        if (this._xhrDelegate) {
+          return delegate(this._xhrDelegate, 'setRequestHeader', arguments);
+        }
         this._request.headers[header.toLowerCase()] = value;
       },
 
-      removeRequestHeader: function(header) {
+      removeRequestHeader: function(header) { // TODO: remove; this isn't in the spec
         delete this._request.headers[header.toLowerCase()];
       },
 
       send: function (data) {
+        if (this._xhrDelegate) {
+          this._xhrDelegate.timeout = this.timeout;
+          this._xhrDelegate.withCredentials = this.withCredentials;
+          return delegate(this, 'send', arguments);
+        }
         var instance = this; // for minification & reference to this
         instance._request.data = data;
         instance._request.callback = function(response) {
@@ -143,8 +228,12 @@
       },
 
       abort: function() { // default abort
+        if (this._xhrDelegate) {
+          this._xhrDelegate.abort();
+        }
         delete this._request;
       }
     };
   }
-}(window));
+  return XMLHttpRequestFactory;
+});
