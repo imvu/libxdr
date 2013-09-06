@@ -25,6 +25,6 @@ The wrapper around XMLHttpRequest does not support the following features in [XM
 [imvujs]: http://github.com/imvu/imvujs
 [libxdr]: http://github.com/eligrey/libxdr
 [eli-pmxdr]: http://github.com/eligrey/pmxdr
-[pmxdr]: http://github.com/srhazi-imvu/pmxdr
+[pmxdr]: http://github.com/imvu/pmxdr
 [xmlhttprequest]: http://www.w3.org/TR/XMLHttpRequest/
 [cors]: http://www.w3.org/TR/cors/
