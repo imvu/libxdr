@@ -1,5 +1,7 @@
-This is a fork of Eli Grey's [libxdr][libxdr]. It depends on [pmxdr][pmxdr],
-which is also a fork of Eli Grey's [pmxdr][eli-pmxdr] and [imvujs][imvujs].
+This is a fork of Eli Grey's [libxdr][libxdr]. Dependencies:
+
+* [imvujs][imvujs]
+* [pmxdr][pmxdr] (also a fork of Eli Grey's [pmxdr][eli-pmxdr])
 
 This fork of libxdr provides a factory for an
 [XMLHttpRequest][xmlhttprequest]-compatible interface, which falls back to the
