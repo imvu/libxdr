@@ -27,6 +27,10 @@ module({}, function (imports) {
       );
     } catch (e) {}
 
+    if (hasNativeCrossOriginSupport) {
+        return XMLHttpRequest;
+    }
+
     function XDR() { // TODO: support { anon: true }
       // Privates for delegation
       this.__isCrossOrigin = false;
@@ -72,7 +76,7 @@ module({}, function (imports) {
            (scheme === null || scheme === this.__origin.scheme) &&
            (authority === null || authority === this.__origin.authority)
         );
-        if (!this.__isCrossOrigin || hasNativeCrossOriginSupport) {
+        if (!this.__isCrossOrigin) {
           this._xhrDelegate = new XMLHttpRequest();
           this._xhrDelegate.onloadstart = function () { return delegate(this, 'onloadstart', arguments); }.bind(this);
           this._xhrDelegate.onprogress  = function () { return delegate(this, 'onprogress', arguments);  }.bind(this);
