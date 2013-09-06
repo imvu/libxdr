@@ -52,22 +52,28 @@ module({}, function (imports) {
     }
 
     //XDR.defaultTimeout = 10000; // default timeout; 10000 is IE8's default for similar XDomainRequest
+    XDR.UNSENT = 0;
+    XDR.OPENED = 1;
+    XDR.HEADERS_RECEIVED = 2;
+    XDR.LOADING = 3;
+    XDR.DONE = 4;
 
     XDR.prototype = {
-
+      UNSENT: 0,
+      OPENED: 1,
+      HEADERS_RECEIVED: 2,
+      LOADING: 3,
+      DONE: 4,
       open: function (method, uri, async) { // TODO: support user, password
         var parsedUri = new IMVU.URI(uri);
-        var scheme = uri.getScheme();
-        var authority = uri.getAuthority();
+        var scheme = parsedUri.getScheme();
+        var authority = parsedUri.getAuthority();
         this.__isCrossOrigin = !(
-           (scheme === null || scheme === this.__origin.scheme) ||
+           (scheme === null || scheme === this.__origin.scheme) &&
            (authority === null || authority === this.__origin.authority)
         );
         if (!this.__isCrossOrigin || hasNativeCrossOriginSupport) {
-          this._xhrDelegate = new this.XMLHttpRequest();
-          this._xhrDelegate.timeout = this.timeout;
-          this._xhrDelegate.withCredentials = this.withCredentials;
-          this._xhrDelegate.open(method, uri, async);
+          this._xhrDelegate = new XMLHttpRequest();
           this._xhrDelegate.onloadstart = function () { return delegate(this, 'onloadstart', arguments); }.bind(this);
           this._xhrDelegate.onprogress  = function () { return delegate(this, 'onprogress', arguments);  }.bind(this);
           this._xhrDelegate.onabort     = function () { return delegate(this, 'onabort', arguments);     }.bind(this);
@@ -77,8 +83,11 @@ module({}, function (imports) {
           this._xhrDelegate.onloadend   = function () { return delegate(this, 'onloadend', arguments);   }.bind(this);
           this._xhrDelegate.onreadystatechange = function () {
             this.readyState = this._xhrDelegate.readyState;
+            this.response = this._xhrDelegate.response;
+            this.responseText = this._xhrDelegate.responseText;
             return delegate(this, 'onreadystatechange', arguments);
           }.bind(this);
+          this._xhrDelegate.open(method, uri, async);
           return;
         }
 
@@ -121,7 +130,7 @@ module({}, function (imports) {
         if (this._xhrDelegate) {
           this._xhrDelegate.timeout = this.timeout;
           this._xhrDelegate.withCredentials = this.withCredentials;
-          return delegate(this, 'send', arguments);
+          return delegate(this._xhrDelegate, 'send', arguments);
         }
         var instance = this; // for minification & reference to this
         instance._request.data = data;
@@ -229,11 +238,21 @@ module({}, function (imports) {
 
       abort: function() { // default abort
         if (this._xhrDelegate) {
-          this._xhrDelegate.abort();
+          return delegate(this, 'abort', arguments);
         }
         delete this._request;
-      }
+      },
+
+      onloadstart: function () {},
+      onprogress: function () {},
+      onabort: function () {},
+      onerror: function () {},
+      onload: function () {},
+      ontimeout: function () {},
+      onloadend: function () {},
+      onreadystatechange: function () {}
     };
+    return XDR;
   }
   return XMLHttpRequestFactory;
 });
