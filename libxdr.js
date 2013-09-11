@@ -15,9 +15,9 @@ module({}, function (imports) {
   }
 
   function XMLHttpRequestFactory(options) {
-    var XMLHttpRequest = IMVU.requireKey(options, 'XMLHttpRequest');
-    var location = IMVU.requireKey(options, 'location');
-    var pmxdr = IMVU.requireKey(options, 'pmxdr');
+    var XMLHttpRequest = IMVU.requireProperty(options, 'XMLHttpRequest');
+    var location = IMVU.requireProperty(options, 'location');
+    var pmxdr = IMVU.requireProperty(options, 'pmxdr');
 
     var hasNativeCrossOriginSupport = false;
     try {
