@@ -182,19 +182,7 @@ module({}, function (imports) {
           if (instance.status === 408 && typeof instance.ontimeout === "function")
               return instance.ontimeout();
 
-          var xmlDocument = null; // parse response.data and simulate responseXML
-          try {
-            xmlDocument = (new DOMParser()).parseFromString(response.data, "application/xml");
-          } catch(e1) {
-            try {
-              xmlDocument = new ActiveXObject("Microsoft.XMLDOM");
-              xmlDocument.loadXML(response.data);
-            } catch(e2) {
-              xmlDocument = null;
-            }
-          }
-
-          instance.responseXML = xmlDocument;
+          instance.responseXML = null; // TODO: support responseXML iff responseType === 'xml'
 
           instance.responseText = response.data;
 
