@@ -1,6 +1,5 @@
 /*jshint es5: true*/
 module({
-    XMLHttpRequestFactory: 'libxdr.js',
     FakeXMLHttpRequestFactory: '../../fakes/FakeXMLHttpRequestFactory.js'
 }, function (imports) {
     function FakePmxdr() {
@@ -19,7 +18,7 @@ module({
     };
 
     test('has XMLHttpRequest constants', function () {
-        this.xmlHttpRequestFactory = new imports.XMLHttpRequestFactory({
+        this.xmlHttpRequestFactory = new IMVU.XMLHttpRequestFactory({
             XMLHttpRequest: function () {},
             location: {
                 protocol: 'http:',
@@ -47,7 +46,7 @@ module({
             this.XMLHttpRequest = new imports.FakeXMLHttpRequestFactory();
             this.pmxdr = new FakePmxdr();
 
-            this.xmlHttpRequestFactory = new imports.XMLHttpRequestFactory({
+            this.xmlHttpRequestFactory = new IMVU.XMLHttpRequestFactory({
                 XMLHttpRequest: this.XMLHttpRequest,
                 location: {
                     protocol: 'http:',
@@ -98,7 +97,7 @@ module({
                 }.bind(this));
             };
 
-            this.XDR = new imports.XMLHttpRequestFactory({
+            this.XDR = new IMVU.XMLHttpRequestFactory({
                 XMLHttpRequest: this.BadXMLHttpRequest,
                 location: {
                     protocol: 'http:',

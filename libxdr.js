@@ -9,7 +9,8 @@
 
 /*! @source http://purl.eligrey.com/github/libxdr/blob/master/libxdr.js*/
 
-module({}, function (imports) {
+var IMVU = IMVU || {};
+(function() {
   function delegate(object, method, args) {
     return object[method].apply(object, args);
   }
@@ -28,7 +29,7 @@ module({}, function (imports) {
     } catch (e) {}
 
     if (hasNativeCrossOriginSupport) {
-        return XMLHttpRequest;
+      return XMLHttpRequest;
     }
 
     function XDR() { // TODO: support { anon: true }
@@ -246,5 +247,12 @@ module({}, function (imports) {
     };
     return XDR;
   }
-  return XMLHttpRequestFactory;
-});
+  IMVU.XMLHttpRequestFactory = XMLHttpRequestFactory;
+  if (typeof XMLHttpRequest !== 'undefined') {
+    IMVU.XMLHttpRequest = new XMLHttpRequestFactory({
+      XMLHttpRequest: XMLHttpRequest,
+      location: window.location,
+      pmxdr: IMVU.pmxdr
+    });
+  }
+})();
