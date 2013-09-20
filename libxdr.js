@@ -169,19 +169,21 @@ var IMVU = IMVU || {};
               instance.statusText = response.statusText;
           }
 
-            if (!instance.status)
-              instance.status = 200; // pmxdr host wouldn't respond unless the status was 200 so default to it
+          if (!instance.status)
+            instance.status = 200; // pmxdr host wouldn't respond unless the status was 200 so default to it
 
-
-          if (response.error || instance.status >= 400) {
+          if (response.error) {
+            if (typeof instance.onreadystatechange === "function")
+              instance.onreadystatechange();
+            if (typeof instance.onerror === "function")
+              instance.onerror();
             if (typeof instance.onloadend === "function")
               instance.onloadend();
-            if (typeof instance.onerror === "function")
-              return instance.onerror();
+            return;
           }
 
           if (instance.status === 408 && typeof instance.ontimeout === "function")
-              return instance.ontimeout();
+            return instance.ontimeout();
 
           instance.responseXML = null; // TODO: support responseXML iff responseType === 'xml'
 
