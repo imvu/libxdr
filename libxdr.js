@@ -99,6 +99,11 @@ var IMVU = IMVU || {};
         if (async === false)
           throw new RangeError("XDR.open: libxdr does not support synchronous requests.");
 
+        if (!parsedUri.scheme) {
+          parsedUri.setScheme(this.__origin.scheme);
+        }
+        uri = parsedUri.toString();
+
         this._request = { // request object for pmxdr.request
           method : method,
           uri    : uri,

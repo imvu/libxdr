@@ -149,6 +149,25 @@ module({
             assert.equal(0, this.xhrInstances.length);
         });
 
+        test('supports protocol-relative URLs', function () {
+            var xhr = new this.XDR();
+            var done = false;
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === xhr.DONE) {
+                    done = true;
+                }
+            };
+            xhr.open('GET', '//alternative/bar');
+            xhr.setRequestHeader('Herp', 'Derp');
+            xhr.send();
+
+            assert.equal(1, this.pmxdr._instances.length);
+            assert.equal('GET', this.pmxdr._instances[0]._options.method);
+            assert.equal('http://alternative/bar', this.pmxdr._instances[0]._options.uri);
+            assert.equal('Derp', this.pmxdr._instances[0]._options.headers.herp);
+            assert.false(done);
+        });
+
         this.assertDelegatesToXMLHttpRequest = function (url) {
             var xhr = new this.XDR();
             var events = {};
