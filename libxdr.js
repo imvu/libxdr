@@ -88,8 +88,13 @@ var IMVU = IMVU || {};
           this._xhrDelegate.onloadend   = function () { return delegate(this, 'onloadend', arguments);   }.bind(this);
           this._xhrDelegate.onreadystatechange = function () {
             this.readyState = this._xhrDelegate.readyState;
-            this.response = this._xhrDelegate.response;
-            this.responseText = this._xhrDelegate.responseText;
+            ['response', 'responseText', 'status', 'statusText'].forEach(function(pn) {
+              try {
+                this[pn] = this._xhrDelegate[pn];
+              }
+              catch (e) {
+              }
+            }, this);
             return delegate(this, 'onreadystatechange', arguments);
           }.bind(this);
           this._xhrDelegate.open(method, uri, async);
